@@ -6,7 +6,8 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
       await fn(req, res, next);
     } catch (error: unknown) {
       const err = error as { code?: number; message?: string };
-      res.status(err.code || 500).json({
+      const statusCode = (err.code && err.code >= 100 && err.code < 600) ? err.code : 500;
+      res.status(statusCode).json({
         success: false,
         message: err.message || "Something went wrong",
       });
