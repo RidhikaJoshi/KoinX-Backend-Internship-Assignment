@@ -1,1 +1,1 @@
-{"root":["./src/contants.ts","./src/index.ts","./src/db/index.ts","./src/utils/apierror.ts","./src/utils/apiresponse.ts","./src/utils/asynchandler.ts"],"version":"5.6.3"}
+{"root":["./src/contants.ts","./src/index.ts","./src/db/index.ts","./src/models/bitcoin.model.ts","./src/models/ethereum.model.ts","./src/models/matic-network.model.ts","./src/utils/apierror.ts","./src/utils/apiresponse.ts","./src/utils/asynchandler.ts"],"version":"5.6.3"}
