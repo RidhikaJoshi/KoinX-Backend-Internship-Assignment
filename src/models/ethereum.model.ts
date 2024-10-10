@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 
 const ethereumSchema = new mongoose.Schema({
+    // curr_price, market_cap, change_24h
     curr_price: {
         type: Number,
         required: true

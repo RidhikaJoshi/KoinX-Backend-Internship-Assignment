@@ -12,9 +12,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.asyncHandler = void 0;
 const asyncHandler = (fn) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        // fn is a function that is passed as a parameter
+        // fn is an async function that takes req, res, next as parameters
         yield fn(req, res, next);
     }
     catch (error) {
+        // error is of type unknown
+        // error is casted to an object with code and message properties
+        // statusCode is assigned the value of code if code is between 100 and 600
         const err = error;
         const statusCode = (err.code && err.code >= 100 && err.code < 600) ? err.code : 500;
         res.status(statusCode).json({

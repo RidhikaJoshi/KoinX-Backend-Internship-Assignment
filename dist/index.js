@@ -22,9 +22,9 @@ const matic_network_model_1 = require("./models/matic-network.model");
 const ethereum_model_1 = require("./models/ethereum.model");
 const dotenv_1 = __importDefault(require("dotenv"));
 const index_js_1 = __importDefault(require("./db/index.js"));
-//import cron from 'node-cron';
+const node_cron_1 = __importDefault(require("node-cron"));
 dotenv_1.default.config();
-(0, index_js_1.default)()
+(0, index_js_1.default)() // connecting to the database
     .then(() => {
     app.on("error", (error) => {
         // using arrow function to catch error occured in connecting express and database
@@ -32,10 +32,12 @@ dotenv_1.default.config();
         throw error;
     });
     app.listen(process.env.PORT || 8000, () => {
+        // listening to the port
         console.log(`Server is running on port ${process.env.PORT}`);
     });
 })
     .catch((err) => {
+    // catching error occured in connecting to database
     console.log("Error occured in connecting to database", err);
 });
 const app = (0, express_1.default)();
@@ -43,52 +45,34 @@ const app = (0, express_1.default)();
 // Implement a background job that will fetch the current price in USD,
 //  market cap in USD and 24 hour change of 3 cryptocurrencies: Bitcoin, Matic, and Ethereum and store it in a database. 
 // This job should run once every 2 hours.
-app.get('/', (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const response = yield axios_1.default.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin%2Cethereum%2Cmatic-network&vs_currencies=usd&include_market_cap=true&include_24hr_vol=false&include_24hr_change=true&include_last_updated_at=false', {
-        headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
-    });
-    console.log(response.data);
-    // Adding data into the mongodb database
-    const bitcoin = yield bitcoin_model_1.Bitcoin.create({
-        curr_price: response.data.bitcoin.usd,
-        market_cap: response.data.bitcoin.usd_market_cap,
-        change_24h: response.data.bitcoin.usd_24h_change
-    });
-    if (!bitcoin) {
-        res
-            .status(400)
-            .json(new ApiError_1.ApiError(400, "Error in saving data"));
-        return;
+node_cron_1.default.schedule('0 */2 * * *', () => __awaiter(void 0, void 0, void 0, function* () {
+    // fetching data from the api
+    try {
+        const response = yield axios_1.default.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin%2Cethereum%2Cmatic-network&vs_currencies=usd&include_market_cap=true&include_24hr_vol=false&include_24hr_change=true&include_last_updated_at=false', {
+            headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
+        });
+        // Adding data into the mongodb database
+        const bitcoin = yield bitcoin_model_1.Bitcoin.create({
+            curr_price: response.data.bitcoin.usd,
+            market_cap: response.data.bitcoin.usd_market_cap,
+            change_24h: response.data.bitcoin.usd_24h_change
+        });
+        const ethereum = yield ethereum_model_1.Ethereum.create({
+            curr_price: response.data.ethereum.usd,
+            market_cap: response.data.ethereum.usd_market_cap,
+            change_24h: response.data.ethereum.usd_24h_change
+        });
+        const matic = yield matic_network_model_1.Matic_Network.create({
+            curr_price: response.data["matic-network"].usd,
+            market_cap: response.data["matic-network"].usd_market_cap,
+            change_24h: response.data["matic-network"].usd_24h_change
+        });
+        console.log("Data fetched and stored successfully");
     }
-    const ethereum = yield ethereum_model_1.Ethereum.create({
-        curr_price: response.data.ethereum.usd,
-        market_cap: response.data.ethereum.usd_market_cap,
-        change_24h: response.data.ethereum.usd_24h_change
-    });
-    if (!ethereum) {
-        res
-            .status(400)
-            .json(new ApiError_1.ApiError(400, "Error in saving data"));
-        return;
+    catch (error) {
+        console.error("Error in fetching or storing data", error);
     }
-    const matic = yield matic_network_model_1.Matic_Network.create({
-        curr_price: response.data["matic-network"].usd,
-        market_cap: response.data["matic-network"].usd_market_cap,
-        change_24h: response.data["matic-network"].usd_24h_change
-    });
-    if (!matic) {
-        res
-            .status(400)
-            .json(new ApiError_1.ApiError(400, "Error in saving data"));
-        return;
-    }
-    // console.log("Bitcoin",bitcoin);
-    // console.log("Ethereum",ethereum);
-    // console.log("Matic",matic);
-    res
-        .status(200)
-        .json(new ApiResponse_1.ApiResponse(200, "Data Fetched successfully", response.data));
-})));
+}));
 // Task 2
 // Implement an API /stats, that will return the latest data about the requested cryptocurrency.
 // Query params:
@@ -101,6 +85,7 @@ app.get('/', (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, vo
 // 	price: 40000,
 // 	marketCap: 800000000,
 app.get('/stats', (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // checking if the coin name is valid or not
     const coin = req.query.coin;
     if (!coin || !['bitcoin', 'ethereum', 'matic-network'].includes(coin)) {
         res
@@ -108,6 +93,7 @@ app.get('/stats', (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 
             .json(new ApiError_1.ApiError(400, 'Invalid coin name'));
         return;
     }
+    // fetching data from the database
     const response = yield axios_1.default.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=false&include_24hr_change=true&include_last_updated_at=false`, {
         headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
     });
@@ -129,6 +115,7 @@ app.get('/stats', (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 
 // 	deviation: 4082.48
 // }
 app.get('/deviation', (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // checking if the coin name is valid or not
     const coin = req.query.coin;
     if (!coin || !['bitcoin', 'ethereum', 'matic-network'].includes(coin)) {
         res
@@ -136,6 +123,7 @@ app.get('/deviation', (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
             .json(new ApiError_1.ApiError(400, 'Invalid coin name'));
         return;
     }
+    // fetching data from the database
     let data = [];
     if (coin === 'bitcoin') {
         data = yield bitcoin_model_1.Bitcoin.find().sort({ createdAt: -1 }).limit(100);
@@ -146,6 +134,7 @@ app.get('/deviation', (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
     else if (coin === 'matic-network') {
         data = yield matic_network_model_1.Matic_Network.find().sort({ createdAt: -1 }).limit(100);
     }
+    // calculating standard deviation
     let sum = 0;
     for (let i = 0; i < data.length; i++) {
         sum += data[i].curr_price;
@@ -153,10 +142,10 @@ app.get('/deviation', (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
     const mean = sum / data.length; // calculating mean
     let sumOfSquares = 0;
     for (let i = 0; i < data.length; i++) {
-        sumOfSquares += Math.pow(data[i].curr_price - mean, 2);
+        sumOfSquares += Math.pow(data[i].curr_price - mean, 2); // calculating sum of squares
     }
-    const deviation = Math.sqrt(sumOfSquares / (data.length - 1));
-    res
+    const deviation = Math.sqrt(sumOfSquares / (data.length - 1)); // calculating standard deviation
+    res // sending response
         .status(200)
         .json(new ApiResponse_1.ApiResponse(200, "Data Fetched successfully", deviation.toString()));
 })));

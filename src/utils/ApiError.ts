@@ -4,6 +4,7 @@ class ApiError extends Error {
     message: string;
     errors: any[];
     data: any;
+  //  stack: string;
   
     constructor(
       statusCode: number,

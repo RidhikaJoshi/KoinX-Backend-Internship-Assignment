@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Ethereum = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const ethereumSchema = new mongoose_1.default.Schema({
+    // curr_price, market_cap, change_24h
     curr_price: {
         type: Number,
         required: true

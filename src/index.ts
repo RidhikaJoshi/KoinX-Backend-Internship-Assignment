@@ -39,6 +39,7 @@ const app = express();
 // This job should run once every 2 hours.
 
 cron.schedule('0 */2 * * *', async () => {
+    // fetching data from the api
     try {
         const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin%2Cethereum%2Cmatic-network&vs_currencies=usd&include_market_cap=true&include_24hr_vol=false&include_24hr_change=true&include_last_updated_at=false', {
             headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
@@ -84,7 +85,7 @@ cron.schedule('0 */2 * * *', async () => {
 
 
 app.get('/stats', asyncHandler(async (req:Request,res:Response)=>{
-
+    // checking if the coin name is valid or not
     const coin=req.query.coin;
     if (!coin || !['bitcoin', 'ethereum', 'matic-network'].includes(coin as string)) {
             res
@@ -92,6 +93,7 @@ app.get('/stats', asyncHandler(async (req:Request,res:Response)=>{
         .json(new ApiError(400, 'Invalid coin name'));
         return;
     }
+    // fetching data from the database
     const response=await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=false&include_24hr_change=true&include_last_updated_at=false`,
     {
         headers: {accept: 'application/json', 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY}
@@ -119,6 +121,7 @@ app.get('/stats', asyncHandler(async (req:Request,res:Response)=>{
 // }
 
 app.get('/deviation', asyncHandler(async (req:Request,res:Response)=>{
+    // checking if the coin name is valid or not
     const coin=req.query.coin;
     if (!coin || !['bitcoin', 'ethereum', 'matic-network'].includes(coin as string)) {
             res
@@ -126,6 +129,7 @@ app.get('/deviation', asyncHandler(async (req:Request,res:Response)=>{
         .json(new ApiError(400, 'Invalid coin name'));
         return;
     }
+    // fetching data from the database
     let data: any[] = [];
     if(coin==='bitcoin'){
         data=await Bitcoin.find().sort({createdAt: -1}).limit(100);
@@ -136,6 +140,7 @@ app.get('/deviation', asyncHandler(async (req:Request,res:Response)=>{
     else if(coin==='matic-network'){
         data=await Matic_Network.find().sort({createdAt: -1}).limit(100);
     }
+    // calculating standard deviation
     let sum=0;
     for(let i=0;i<data.length;i++){
         sum+=data[i].curr_price;
@@ -143,10 +148,10 @@ app.get('/deviation', asyncHandler(async (req:Request,res:Response)=>{
     const mean=sum/data.length; // calculating mean
     let sumOfSquares=0;
     for(let i=0;i<data.length;i++){
-        sumOfSquares+=Math.pow(data[i].curr_price-mean,2);
+        sumOfSquares+=Math.pow(data[i].curr_price-mean,2); // calculating sum of squares
     }
-    const deviation=Math.sqrt(sumOfSquares/(data.length - 1));
-    res
+    const deviation=Math.sqrt(sumOfSquares/(data.length - 1)); // calculating standard deviation
+    res // sending response
     .status(200)
     .json(new ApiResponse(200,"Data Fetched successfully", deviation.toString()));
 
