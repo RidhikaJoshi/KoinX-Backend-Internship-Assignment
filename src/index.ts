@@ -22,6 +22,8 @@ connectDB() // connecting to the database
     app.listen(process.env.PORT || 8000, () => {
         // listening to the port
       console.log(`Server is running on port ${process.env.PORT}`);
+      startCryptoDataJob(); // starting the job to fetch data
+      console.log("Job started successfully");
     });
   })
   .catch((err) => {
@@ -38,7 +40,7 @@ const app = express();
 //  market cap in USD and 24 hour change of 3 cryptocurrencies: Bitcoin, Matic, and Ethereum and store it in a database. 
 // This job should run once every 2 hours.
 
-cron.schedule('0 */2 * * *', async () => {
+ async function fetchCryptoData()  {
     // fetching data from the api
     try {
         const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin%2Cethereum%2Cmatic-network&vs_currencies=usd&include_market_cap=true&include_24hr_vol=false&include_24hr_change=true&include_last_updated_at=false', {
@@ -51,24 +53,34 @@ cron.schedule('0 */2 * * *', async () => {
             market_cap: response.data.bitcoin.usd_market_cap,
             change_24h: response.data.bitcoin.usd_24h_change
         });
-
+        bitcoin.save();
         const ethereum = await Ethereum.create({
             curr_price: response.data.ethereum.usd,
             market_cap: response.data.ethereum.usd_market_cap,
             change_24h: response.data.ethereum.usd_24h_change
         });
-
+        ethereum.save();
         const matic = await Matic_Network.create({
             curr_price: response.data["matic-network"].usd,
             market_cap: response.data["matic-network"].usd_market_cap,
             change_24h: response.data["matic-network"].usd_24h_change
         });
-
+        matic.save();
         console.log("Data fetched and stored successfully");
     } catch (error) {
         console.error("Error in fetching or storing data", error);
     }
-});
+};
+
+export function startCryptoDataJob() {
+    cron.schedule('0 */2 * * *', async () => {
+      console.log('Running cryptocurrency data fetch job');
+      await fetchCryptoData();
+    });
+  
+    fetchCryptoData();
+  }
+
 
 // Task 2
 // Implement an API /stats, that will return the latest data about the requested cryptocurrency.
