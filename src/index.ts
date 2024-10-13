@@ -35,6 +35,11 @@ connectDB() // connecting to the database
 const app = express();
 
 
+app.get("/", (req: Request, res: Response) => {
+    // sending response
+    res.status(200).json("Server is running!  Use /stats or /deviation to get the data");
+  }
+);
 // Task 1
 // Implement a background job that will fetch the current price in USD,
 //  market cap in USD and 24 hour change of 3 cryptocurrencies: Bitcoin, Matic, and Ethereum and store it in a database. 
